@@ -46,7 +46,7 @@ class MNISTDataset(CustomImageDataset):
         directory = "train" if train else "test"
         path = os.path.join(MNIST_PATH, directory)
 
-        if not os.path.exists(MNIST_PATH):
+        if not os.path.exists(path):
             self.load_mnist_data(path, train)
 
         super().__init__(path=path, transform=transform, flatten=flatten)

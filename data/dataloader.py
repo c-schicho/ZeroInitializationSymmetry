@@ -20,7 +20,7 @@ def get_dataloader(
         worker_init_fn: Optional[Callable] = None,
         generator: Optional[Generator] = None
 ) -> DataLoader:
-    dataset = MNISTDataset(transform=transform, flatten=flatten, train=train, )
+    dataset = MNISTDataset(transform=transform, flatten=flatten, train=train)
     return DataLoader(dataset, shuffle=shuffle, batch_size=batch_size, num_workers=num_workers,
                       worker_init_fn=worker_init_fn, generator=generator)
 
