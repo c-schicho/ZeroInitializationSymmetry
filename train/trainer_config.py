@@ -1,0 +1,15 @@
+from dataclasses import dataclass
+from typing import Optional, Callable
+
+from torchvision.transforms import ToTensor
+
+
+@dataclass
+class TrainerConfig:
+    model_name: str
+    epochs: int
+    batch_size: int
+    initialization_mode: str
+    initialization_factor: float = 1.
+    optimizer: Optional = None
+    transform: Optional[Callable] = ToTensor()

@@ -1,32 +1,32 @@
 import torch
-from torch.nn import Module, Sequential, Conv2d, ReLU, Linear, Flatten
+from torch.nn import Module, Linear, Sequential, ReLU
 
 from utils import zero_initialize_layer
 
 
-class MNISTCNNModel(Module):
+class CIFARFNNModel(Module):
 
     def __init__(self):
-        super(MNISTCNNModel, self).__init__()
-        self.cnn1 = Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=1, padding=2)
-        self.cnn2 = Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2)
-        self.fnn = Linear(32 * 28 * 28, 10)
-        self.act = ReLU()
+        super(CIFARFNNModel, self).__init__()
+        self.fnn1 = Linear(32 * 32 * 3, 512)
+        self.fnn2 = Linear(512, 256)
+        self.fnn3 = Linear(256, 128)
+        self.fnn4 = Linear(128, 10)
+        self.act = ReLU(True)
 
         self.model = Sequential(
-            self.cnn1,
+            self.fnn1,
             self.act,
-
-            self.cnn2,
+            self.fnn2,
             self.act,
-
-            Flatten(),
-            self.fnn1
+            self.fnn3,
+            self.act,
+            self.fnn4
         )
 
     def zero_initialization(self, mode: str, factor: float):
         for layer in self.model:
-            if isinstance(layer, Linear) or isinstance(layer, Conv2d):
+            if isinstance(layer, Linear):
                 zero_initialize_layer(layer, mode, factor)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

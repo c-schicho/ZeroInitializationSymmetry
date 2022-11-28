@@ -24,8 +24,7 @@ class Trainer:
         self.writer = writer if writer is not None else SummaryWriter(writer_path)
 
     def train(self, dataloader: DataLoader, num_epochs: int = 10):
-        step = 1
-
+        step = 0
         self.model.train()
 
         for epoch in range(1, num_epochs + 1):
@@ -39,14 +38,12 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
+                step += targets.size(dim=0)
                 write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
-
-                step += 1
 
     def test(self, dataloader: DataLoader):
         step = 0
         aggr_loss = 0.
-
         self.model.eval()
 
         for data_batch in tqdm(dataloader, total=len(dataloader), ncols=90, desc=f"Evaluating model"):
