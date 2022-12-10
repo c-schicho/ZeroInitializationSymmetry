@@ -8,7 +8,10 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from utils import write_train_summary
+from utils import calc_accuracy
+from utils import write_train_summary, write_validation_summary
+
+import numpy as np
 
 
 class Trainer:
@@ -25,12 +28,12 @@ class Trainer:
             if model_name is None else os.path.join("results", model_name)
         self.writer = writer if writer is not None else SummaryWriter(writer_path)
 
-    def train(self, dataloader: DataLoader, num_epochs: int = 10):
+    def train(self, train_loader: DataLoader, validation_loader: DataLoader, num_epochs: int = 10):
         step = 0
         self.model.train()
 
         for epoch in range(1, num_epochs + 1):
-            for data_batch in tqdm(dataloader, total=len(dataloader), ncols=90, desc=f"Epoch {epoch}/{num_epochs}"):
+            for data_batch in tqdm(train_loader, total=len(train_loader), ncols=90, desc=f"Epoch {epoch}/{num_epochs}"):
                 img_data = data_batch[0].to(self.device)
                 targets = data_batch[1].to(self.device)
                 batch_size = targets.size(dim=0)
@@ -42,10 +45,36 @@ class Trainer:
                 self.optimizer.step()
 
                 if self.reduction == "sum":
-                    loss = loss / batch_size
+                    loss /= batch_size
+
+                write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
+
+                if step % 10_000 == 0:
+                    self.__calculate_write_validation_metrics(validation_loader, step)
 
                 step += batch_size
-                write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
+
+    def __calculate_write_validation_metrics(self, dataloader: DataLoader, step: int):
+        val_loss = []
+        val_acc = []
+
+        with torch.no_grad():
+            for data_batch in dataloader:
+                img_data = data_batch[0].to(self.device)
+                targets = data_batch[1].to(self.device)
+
+                outputs = self.model(img_data)
+                batch_loss = self.loss_fun(outputs, targets)
+
+                if self.reduction == "sum":
+                    batch_size = targets.size(dim=0)
+                    batch_loss /= batch_size
+
+                val_loss.append(batch_loss.cpu().item())
+                val_acc.append(calc_accuracy(outputs, targets))
+
+        write_validation_summary(writer=self.writer, loss=np.mean(val_loss).item(), accuracy=np.mean(val_acc).item(),
+                                 global_step=step)
 
     def test(self, dataloader: DataLoader):
         step = 0
@@ -61,7 +90,7 @@ class Trainer:
 
             if self.reduction == "sum":
                 batch_size = targets.size(dim=0)
-                loss = loss / batch_size
+                loss /= batch_size
 
             aggr_loss += loss
             step += 1
