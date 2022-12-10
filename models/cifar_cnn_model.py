@@ -1,12 +1,12 @@
 import torch
-from torch.nn import Module, Sequential, Conv2d, ReLU, MaxPool2d, BatchNorm2d, Flatten, Linear
+from torch.nn import Module, Sequential, Conv2d, MaxPool2d, BatchNorm2d, Flatten, Linear, ELU
 
 from utils import zero_initialize_layer
 
 
 class CIFARCNNModel(Module):
 
-    def __init__(self):
+    def __init__(self, activation_fun=None):
         super(CIFARCNNModel, self).__init__()
         self.cnn1 = Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1)
         self.cnn2 = Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
@@ -18,7 +18,7 @@ class CIFARCNNModel(Module):
         self.fnn2 = Linear(1024, 512)
         self.fnn3 = Linear(512, 10)
         self.pool = MaxPool2d(kernel_size=2, stride=2)
-        self.act = ReLU()
+        self.act = activation_fun if activation_fun is not None else ELU(inplace=True)
 
         self.model = Sequential(
             self.cnn1,

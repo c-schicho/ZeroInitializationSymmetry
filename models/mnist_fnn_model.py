@@ -1,16 +1,16 @@
 import torch
-from torch.nn import Module, Linear, ReLU, Sequential
+from torch.nn import Module, Linear, Sequential, ELU
 
 from utils import zero_initialize_layer
 
 
 class MNISTFNNModel(Module):
 
-    def __init__(self):
+    def __init__(self, activation_fun=None):
         super(MNISTFNNModel, self).__init__()
         self.fnn1 = Linear(28 * 28, 500)
         self.fnn2 = Linear(500, 10)
-        self.act = ReLU(True)
+        self.act = activation_fun if activation_fun is not None else ELU(inplace=True)
 
         self.model = Sequential(
             self.fnn1,
