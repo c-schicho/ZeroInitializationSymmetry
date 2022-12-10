@@ -15,10 +15,12 @@ class Trainer:
 
     def __init__(self, model, optimizer=None, loss_fun=None, writer: SummaryWriter = None, force_cpu: bool = False,
                  model_name: Optional[str] = None):
-        self.device = torch.device('cuda' if (torch.cuda.is_available() and not force_cpu) else 'cpu')
+        self.device = torch.device("cuda" if (torch.cuda.is_available() and not force_cpu) else "cpu")
         self.model = model.to(self.device)
         self.optimizer = optimizer if optimizer is not None else Adam(self.model.parameters(), lr=0.001)
-        self.loss_fun = loss_fun if loss_fun is not None else CrossEntropyLoss()
+        self.loss_fun = loss_fun if loss_fun is not None else CrossEntropyLoss(reduction="sum")
+        self.reduction = self.loss_fun.reduction
+
         writer_path = os.path.join("results", self.model.__class__.__name__) \
             if model_name is None else os.path.join("results", model_name)
         self.writer = writer if writer is not None else SummaryWriter(writer_path)
@@ -31,6 +33,7 @@ class Trainer:
             for data_batch in tqdm(dataloader, total=len(dataloader), ncols=90, desc=f"Epoch {epoch}/{num_epochs}"):
                 img_data = data_batch[0].to(self.device)
                 targets = data_batch[1].to(self.device)
+                batch_size = targets.size(dim=0)
 
                 self.optimizer.zero_grad()
                 outputs = self.model(img_data)
@@ -38,7 +41,10 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-                step += targets.size(dim=0)
+                if self.reduction == "sum":
+                    loss = loss / batch_size
+
+                step += batch_size
                 write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
 
     def test(self, dataloader: DataLoader):
@@ -51,8 +57,13 @@ class Trainer:
             targets = data_batch[1].to(self.device)
 
             outputs = self.model(img_data)
-            aggr_loss += self.loss_fun(outputs, targets)
+            loss = self.loss_fun(outputs, targets)
 
+            if self.reduction == "sum":
+                batch_size = targets.size(dim=0)
+                loss = loss / batch_size
+
+            aggr_loss += loss
             step += 1
 
         return print(f"Test loss = {aggr_loss / step}")

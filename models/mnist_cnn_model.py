@@ -1,17 +1,17 @@
 import torch
-from torch.nn import Module, Sequential, Conv2d, ReLU, Linear, Flatten
+from torch.nn import Module, Sequential, Conv2d, Linear, Flatten, ELU
 
 from utils import zero_initialize_layer
 
 
 class MNISTCNNModel(Module):
 
-    def __init__(self):
+    def __init__(self, activation_fun=None):
         super(MNISTCNNModel, self).__init__()
         self.cnn1 = Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=1, padding=2)
         self.cnn2 = Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2)
         self.fnn = Linear(32 * 28 * 28, 10)
-        self.act = ReLU()
+        self.act = activation_fun if activation_fun is not None else ELU(inplace=True)
 
         self.model = Sequential(
             self.cnn1,
