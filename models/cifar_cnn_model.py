@@ -50,7 +50,7 @@ class CIFARCNNModel(Module):
             self.fnn3
         )
 
-    def zero_initialization(self, mode: str, factor: float):
+    def zero_initialization(self, mode: str, factor: float = 1.):
         for layer in self.model:
             if isinstance(layer, Linear) or isinstance(layer, Conv2d):
                 zero_initialize_layer(layer, mode, factor)

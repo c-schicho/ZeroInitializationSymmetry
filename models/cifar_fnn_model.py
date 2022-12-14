@@ -24,7 +24,7 @@ class CIFARFNNModel(Module):
             self.fnn4
         )
 
-    def zero_initialization(self, mode: str, factor: float):
+    def zero_initialization(self, mode: str, factor: float = 1.):
         for layer in self.model:
             if isinstance(layer, Linear):
                 zero_initialize_layer(layer, mode, factor)
