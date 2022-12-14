@@ -10,7 +10,7 @@ class MNISTCNNModel(Module):
         super(MNISTCNNModel, self).__init__()
         self.cnn1 = Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=1, padding=2)
         self.cnn2 = Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2)
-        self.fnn = Linear(32 * 28 * 28, 10)
+        self.fnn1 = Linear(32 * 28 * 28, 10)
         self.act = activation_fun if activation_fun is not None else ELU(inplace=True)
 
         self.model = Sequential(
@@ -24,7 +24,7 @@ class MNISTCNNModel(Module):
             self.fnn1
         )
 
-    def zero_initialization(self, mode: str, factor: float):
+    def zero_initialization(self, mode: str, factor: float = 1.):
         for layer in self.model:
             if isinstance(layer, Linear) or isinstance(layer, Conv2d):
                 zero_initialize_layer(layer, mode, factor)
