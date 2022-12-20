@@ -1,6 +1,7 @@
 import os.path
 from typing import Optional
 
+import numpy as np
 import torch
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
@@ -10,8 +11,6 @@ from tqdm import tqdm
 
 from utils import calc_accuracy
 from utils import write_train_summary, write_validation_summary
-
-import numpy as np
 
 
 class Trainer:
@@ -28,8 +27,10 @@ class Trainer:
             if model_name is None else os.path.join("results", model_name)
         self.writer = writer if writer is not None else SummaryWriter(writer_path)
 
-    def train(self, train_loader: DataLoader, validation_loader: DataLoader, num_epochs: int = 10):
+    def train(self, train_loader: DataLoader, validation_loader: DataLoader, num_epochs: int = 10,
+              train_summary: bool = True, validation_summary_at: int = 10_000, validate_after_epoch: bool = False):
         step = 0
+        update_step = 1
         self.model.train()
 
         for epoch in range(1, num_epochs + 1):
@@ -44,15 +45,20 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-                if self.reduction == "sum":
-                    loss /= batch_size
+                if train_summary:
+                    if self.reduction == "sum":
+                        loss /= batch_size
 
-                write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
+                    write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
 
-                if step % 10_000 == 0:
+                if update_step % validation_summary_at == 0 and validation_loader is not None and not validate_after_epoch:
                     self.__calculate_write_validation_metrics(validation_loader, step)
 
                 step += batch_size
+                update_step += 1
+
+            if validate_after_epoch and validation_loader is not None:
+                self.__calculate_write_validation_metrics(validation_loader, epoch)
 
     def __calculate_write_validation_metrics(self, dataloader: DataLoader, step: int):
         val_loss = []
