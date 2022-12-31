@@ -15,8 +15,15 @@ from utils import write_train_summary, write_validation_summary
 
 class Trainer:
 
-    def __init__(self, model, optimizer=None, loss_fun=None, writer: SummaryWriter = None, force_cpu: bool = False,
-                 model_name: Optional[str] = None):
+    def __init__(
+            self,
+            model,
+            optimizer=None,
+            loss_fun=None,
+            writer: SummaryWriter = None,
+            force_cpu: bool = False,
+            model_name: Optional[str] = None
+    ):
         self.device = torch.device("cuda" if (torch.cuda.is_available() and not force_cpu) else "cpu")
         self.model = model.to(self.device)
         self.optimizer = optimizer if optimizer is not None else Adam(self.model.parameters(), lr=0.001)
@@ -27,9 +34,15 @@ class Trainer:
             if model_name is None else os.path.join("results", model_name)
         self.writer = writer if writer is not None else SummaryWriter(writer_path)
 
-    def train(self, train_loader: DataLoader, validation_loader: DataLoader, num_epochs: int = 10,
-              train_summary: bool = True, validation_summary_at: int = 10_000, validate_after_epoch: bool = False):
-        step = 0
+    def train(
+            self,
+            train_loader: DataLoader,
+            validation_loader: DataLoader,
+            num_epochs: int = 10,
+            train_summary: bool = True,
+            validation_summary_at: int = 10_000,
+            validate_after_epoch: bool = False
+    ):
         update_step = 1
         self.model.train()
 
@@ -49,12 +62,11 @@ class Trainer:
                     if self.reduction == "sum":
                         loss /= batch_size
 
-                    write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=step)
+                    write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=update_step)
 
                 if update_step % validation_summary_at == 0 and validation_loader is not None and not validate_after_epoch:
-                    self.__calculate_write_validation_metrics(validation_loader, step)
+                    self.__calculate_write_validation_metrics(validation_loader, update_step)
 
-                step += batch_size
                 update_step += 1
 
             if validate_after_epoch and validation_loader is not None:
