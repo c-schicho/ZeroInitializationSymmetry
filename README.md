@@ -32,4 +32,4 @@ On the left one can see the gradients of a model initialized with the PyTorch in
 gradients of a model initialized with the presented method. This plot clearly shows how the layers gradually get updated
 output to input layer.
 
-A more detailed report of the experiments and the implications will follow soon. 
+For further information you can read the detailed report. 
