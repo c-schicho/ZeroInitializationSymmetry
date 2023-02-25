@@ -5,6 +5,9 @@ from torch.nn import Linear, Conv2d, Parameter
 
 
 def zero_initialize_layer(layer: Union[Linear, Conv2d], mode: str, factor: float):
+    if mode == "default":
+        return
+
     layer.weight = Parameter(torch.zeros_like(layer.weight, requires_grad=True))
     if layer.bias is not None:
         if mode == "normal":

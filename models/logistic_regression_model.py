@@ -8,5 +8,9 @@ class LogisticRegression(Module):
         super(LogisticRegression, self).__init__()
         self.fnn1 = Linear(input_dim, n_classes)
 
+    def zero_initialization(self, mode: str, factor: float = 1.):
+        # dummy method for consistent api
+        return
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.fnn1(x)

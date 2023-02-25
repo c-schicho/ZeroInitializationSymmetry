@@ -6,6 +6,10 @@ from torch.nn.functional import avg_pool2d
 
 from utils import zero_initialize_layer
 
+"""
+The base of this code was taken from https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py
+"""
+
 
 class Bottleneck(Module):
     expansion = 4

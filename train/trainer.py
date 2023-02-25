@@ -1,7 +1,6 @@
 import os.path
-from typing import Optional
+from typing import Optional, Dict, Union
 
-import numpy as np
 import torch
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
@@ -10,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from utils import calc_accuracy
-from utils import write_train_summary, write_validation_summary
+from utils import write_train_summary, write_validation_summary, write_test_summary
 
 
 class Trainer:
@@ -37,11 +36,14 @@ class Trainer:
     def train(
             self,
             train_loader: DataLoader,
-            validation_loader: DataLoader,
+            validation_loader: Union[DataLoader, None] = None,
+            test_loader: Union[DataLoader, None] = None,
             num_epochs: int = 10,
-            train_summary: bool = True,
+            train_summary: bool = False,
+            validation_summary: bool = False,
             validation_summary_at: int = 10_000,
-            validate_after_epoch: bool = False
+            validate_after_epoch: bool = False,
+            test_after_epoch: bool = False
     ):
         update_step = 1
         self.model.train()
@@ -64,7 +66,7 @@ class Trainer:
 
                     write_train_summary(writer=self.writer, model=self.model, loss=loss, global_step=update_step)
 
-                if update_step % validation_summary_at == 0 and validation_loader is not None and not validate_after_epoch:
+                if update_step % validation_summary_at == 0 and validation_loader is not None and validation_summary:
                     self.__calculate_write_validation_metrics(validation_loader, update_step)
 
                 update_step += 1
@@ -72,9 +74,21 @@ class Trainer:
             if validate_after_epoch and validation_loader is not None:
                 self.__calculate_write_validation_metrics(validation_loader, epoch)
 
+            if test_after_epoch and test_loader is not None:
+                self.__calculate_write_test_metrics(test_loader, epoch)
+
     def __calculate_write_validation_metrics(self, dataloader: DataLoader, step: int):
-        val_loss = []
-        val_acc = []
+        results = self.__calculate_metrics(dataloader)
+        write_validation_summary(writer=self.writer, loss=results["loss"], accuracy=results["accuracy"],
+                                 global_step=step)
+
+    def __calculate_write_test_metrics(self, dataloader: DataLoader, step: int):
+        results = self.__calculate_metrics(dataloader)
+        write_test_summary(writer=self.writer, loss=results["loss"], accuracy=results["accuracy"], global_step=step)
+
+    def __calculate_metrics(self, dataloader: DataLoader) -> Dict[str, float]:
+        all_outputs = []
+        all_targets = []
 
         with torch.no_grad():
             for data_batch in dataloader:
@@ -82,21 +96,24 @@ class Trainer:
                 targets = data_batch[1].to(self.device)
 
                 outputs = self.model(img_data)
-                batch_loss = self.loss_fun(outputs, targets)
 
-                if self.reduction == "sum":
-                    batch_size = targets.size(dim=0)
-                    batch_loss /= batch_size
+                all_outputs.extend(outputs)
+                all_targets.extend(targets)
 
-                val_loss.append(batch_loss.cpu().item())
-                val_acc.append(calc_accuracy(outputs, targets))
+            all_outputs = torch.stack(all_outputs)
+            all_targets = torch.stack(all_targets)
 
-        write_validation_summary(writer=self.writer, loss=np.mean(val_loss).item(), accuracy=np.mean(val_acc).item(),
-                                 global_step=step)
+            loss = self.loss_fun(all_outputs, all_targets)
+            accuracy = calc_accuracy(all_outputs, all_targets)
+
+            if self.reduction == "sum":
+                loss /= len(dataloader.dataset)
+
+        return {'accuracy': accuracy, 'loss': loss}
 
     def test(self, dataloader: DataLoader):
-        step = 0
-        aggr_loss = 0.
+        all_outputs = []
+        all_targets = []
         self.model.eval()
 
         for data_batch in tqdm(dataloader, total=len(dataloader), ncols=90, desc=f"Evaluating model"):
@@ -104,13 +121,18 @@ class Trainer:
             targets = data_batch[1].to(self.device)
 
             outputs = self.model(img_data)
-            loss = self.loss_fun(outputs, targets)
 
-            if self.reduction == "sum":
-                batch_size = targets.size(dim=0)
-                loss /= batch_size
+            all_outputs.extend(outputs)
+            all_targets.extend(targets)
 
-            aggr_loss += loss
-            step += 1
+        all_outputs = torch.stack(all_outputs)
+        all_targets = torch.stack(all_targets)
 
-        return print(f"Test loss = {aggr_loss / step}")
+        loss = self.loss_fun(all_outputs, all_targets)
+        accuracy = calc_accuracy(all_outputs, all_targets)
+
+        if self.reduction == "sum":
+            loss /= len(dataloader.dataset)
+
+        print(f"Test loss = {loss}")
+        print(f"Test accuracy = {accuracy}")
