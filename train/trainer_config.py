@@ -12,5 +12,6 @@ class TrainerConfig:
     initialization_mode: str
     initialization_factor: float = 1.
     optimizer: Optional = None
-    transform: Optional[Callable] = ToTensor()
+    transform_test: Optional[Callable] = ToTensor()
+    transform_train: Optional[Callable] = ToTensor()
     activation_fun: Optional = None
