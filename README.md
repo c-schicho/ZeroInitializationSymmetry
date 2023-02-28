@@ -16,7 +16,7 @@ initialization. Thus, this shows that our approach clearly outperforms zero init
 </div>
 
 Despite the fact that we were able to break the symmetry in zero initialized NNs, we still want to highlight that there
-is a gab in performance between our approach and the LeCun initialization, which we used for comparison. We did not
+is a gab in performance between our approach and the PyTorch initialization, which we used for comparison. We did not
 investigate in the cause of this gap or in how to close it, instead we keep it for future investigations.
 
 Furthermore, our experiments show that large initial biases caused instability during training, whereas small biases did
@@ -28,7 +28,7 @@ research.
     <img src="images/mnist_fnn_scaled.png" width="40%" alt="scaled biases results">
 </p>
 
-Furthermore, we noticed a change in the learning dynamics of models initialized with our approach compared to the LeCun
+Furthermore, we noticed a change in the learning dynamics of models initialized with our approach compared to the PyTorch
 initialization. The weights of the layers of the networks initialized with our approach are clearly updated from the
 output layer to the input layer in the initial phase. Thus, during this phase after each iteration step one layer more
 is updated, this can be seen in the Figure below. We explain this behavior with the cut-off gradient flow in the
